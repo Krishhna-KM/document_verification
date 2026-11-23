@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Document Verification</title>
+<style>
+  :root {
+    --bg:#f5f6f8; --card:#fff; --ink:#1c2230; --muted:#6b7385; --line:#e3e6ec; --accent:#2f5bea; --accent-d:#2447c0;
+    --ok:#1f9d55; --ok-bg:#e6f6ec; --bad:#d64545; --bad-bg:#fdecec; --warn:#c77d0a; --warn-bg:#fff4df;
+    --radius:12px;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+           max-width:1240px; margin:0 auto; padding:22px 20px 6px; }
+  h1 { font-size:1.3rem; margin:0; }
+  h2 { font-size:.8rem; margin:0 0 12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  h3 { font-size:.95rem; margin:22px 0 8px; }
+  .pill { font-size:.8rem; padding:4px 12px; border-radius:99px; background:#e9ecf3; color:var(--muted); }
+  .pill.ok { background:var(--ok-bg); color:var(--ok); } .pill.bad { background:var(--bad-bg); color:var(--bad); }
+  main { max-width:1240px; margin:0 auto; padding:14px 20px 40px; display:grid; grid-template-columns:minmax(340px,5fr) 7fr; gap:20px; align-items:start; }
+  main > section { min-width:0; }
+  @media (max-width:900px) { main { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
+  .hint { color:var(--muted); font-size:.85rem; margin:6px 0 0; }
+  .section + .section { margin-top:22px; }
+
+  .drop { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center;
+          min-height:130px; padding:16px; border:2px dashed #c8cede; border-radius:var(--radius); background:#fafbfd;
+          cursor:pointer; color:var(--muted); transition:.15s; }
+  .drop:hover, .drop.over { border-color:var(--accent); background:#f1f5ff; color:var(--accent); }
+  .drop.has { border-style:solid; border-color:var(--line); background:#fff; color:var(--ink); }
+  .drop img { max-width:100%; max-height:240px; border-radius:8px; border:1px solid var(--line); }
+  .drop .name { font-size:.85rem; color:var(--muted); word-break:break-all; }
+  .pdfbox { font-size:2.2rem; line-height:1; }
+
+  .jsonhead { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  textarea { width:100%; min-height:210px; resize:vertical; padding:11px 12px; font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;
+             color:inherit; background:#fff; border:1px solid var(--line); border-radius:8px; tab-size:2; }
+  textarea:focus { outline:2px solid #c9d5fb; border-color:var(--accent); }
+  textarea.invalid { border-color:var(--bad); outline-color:#f5c2c2; }
+  #jsonstate { font-size:.82rem; margin-top:6px; min-height:1.3em; }
+  #jsonstate.ok { color:var(--ok); } #jsonstate.err { color:var(--bad); }
+  .link { background:none; border:none; padding:0; color:var(--accent); font:inherit; font-size:.85rem; cursor:pointer; }
+  .link:hover { text-decoration:underline; }
+
+  .opt { display:flex; gap:8px; align-items:center; margin:18px 0 0; font-size:.88rem; color:var(--muted); }
+  .actions { display:flex; gap:10px; margin-top:20px; }
+  button { font:inherit; border-radius:8px; padding:10px 20px; cursor:pointer; border:1px solid transparent; }
+  .primary { background:var(--accent); color:#fff; font-weight:600; flex:1; }
+  .primary:hover:not(:disabled) { background:var(--accent-d); }
+  .primary:disabled { opacity:.6; cursor:progress; }
+  .ghost { background:#fff; border-color:var(--line); color:var(--muted); }
+  .ghost:hover { border-color:#c3c9d8; color:var(--ink); }
+
+  .empty { text-align:center; color:var(--muted); padding:70px 20px; }
+  .empty .big { font-size:2.4rem; }
+  .spinner { width:34px; height:34px; border:4px solid #dfe4f2; border-top-color:var(--accent); border-radius:50%;
+             margin:0 auto 14px; animation:spin .9s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .banner { border-radius:var(--radius); padding:16px 18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .banner .title { font-size:1.35rem; font-weight:700; }
+  .banner .sub { font-size:.9rem; opacity:.9; }
+  .banner .score { margin-left:auto; text-align:right; font-size:1.8rem; font-weight:700; line-height:1; }
+  .banner .score small { display:block; font-size:.7rem; font-weight:500; opacity:.8; margin-top:4px; }
+  .banner.FULLY_MATCHED { background:var(--ok-bg); color:var(--ok); }
+  .banner.PARTIALLY_MATCHED { background:var(--warn-bg); color:var(--warn); }
+  .banner.NOT_MATCHED, .banner.ERROR { background:var(--bad-bg); color:var(--bad); }
+
+  .counts { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .count { flex:1; min-width:120px; border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+  .count b { display:block; font-size:1.5rem; line-height:1.1; }
+  .count span { font-size:.78rem; color:var(--muted); }
+  .count.f b { color:var(--ok); } .count.p b { color:var(--warn); } .count.n b { color:var(--bad); }
+
+  .meta { display:flex; gap:18px; flex-wrap:wrap; color:var(--muted); font-size:.82rem; margin:12px 2px 0; }
+  .meta b { color:var(--ink); font-weight:600; }
+  .notice { border-radius:8px; padding:9px 12px; font-size:.86rem; margin-top:10px; background:var(--warn-bg); color:#7a4d05; }
+  .notice.err { background:var(--bad-bg); color:#8a2323; }
+
+  table { width:100%; border-collapse:collapse; font-size:.87rem; }
+  th { text-align:left; font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; color:var(--muted);
+       font-weight:600; padding:6px 8px; border-bottom:1px solid var(--line); }
+  td { padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top; overflow-wrap:break-word; }
+  tr:last-child td { border-bottom:none; }
+  .tablewrap { overflow-x:auto; }
+  .chip { display:inline-block; font-size:.72rem; font-weight:700; padding:2px 9px; border-radius:99px; white-space:nowrap; }
+  .chip.FULLY_MATCHED { background:var(--ok-bg); color:var(--ok); }
+  .chip.PARTIALLY_MATCHED { background:var(--warn-bg); color:var(--warn); }
+  .chip.NOT_MATCHED { background:var(--bad-bg); color:var(--bad); }
+  .bar { height:6px; background:#e9ecf3; border-radius:99px; width:70px; overflow:hidden; margin-top:4px; }
+  .bar i { display:block; height:100%; border-radius:99px; }
+  .bar.FULLY_MATCHED i { background:var(--ok); } .bar.PARTIALLY_MATCHED i { background:var(--warn); } .bar.NOT_MATCHED i { background:var(--bad); }
+  .note { color:var(--muted); font-size:.8rem; }
+  .dim { color:#a3a9b8; }
+  .key { font-weight:600; min-width:110px; }
+  .key small { display:block; font-weight:400; color:var(--muted); font-size:.72rem; }
+  table.mini { margin:4px 0; font-size:.82rem; } table.mini th, table.mini td { padding:6px 10px; } table.mini th { white-space:nowrap; }
+  details { margin-top:14px; } summary { cursor:pointer; color:var(--muted); font-size:.88rem; }
+  pre { background:#f6f7fa; border:1px solid var(--line); border-radius:8px; padding:12px; overflow:auto; max-height:360px; font-size:.78rem; margin:8px 0 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Document Verification</h1>
+  <span id="status" class="pill">Connecting…</span>
+</header>
+
+<main>
+  <!-- ============ input ============ -->
+  <section class="card">
+    <div class="section">
+      <h2>1 · Document</h2>
+      <label class="drop" id="drop" for="file">
+        <input id="file" type="file" accept="image/*,.pdf" hidden>
+        <div id="dropInner"></div>
+      </label>
+    </div>
+
+    <div class="section">
+      <h2>2 · Keys to look for (JSON)</h2>
+      <div class="jsonhead">
+        <span class="hint" style="margin:0">Each key is searched for in the document and compared with your value.</span>
+        <span>
+          <button type="button" class="link" id="example">Insert example</button> ·
+          <label class="link" for="jsonfile" style="cursor:pointer">Load .json file</label>
+          <input id="jsonfile" type="file" accept=".json,application/json" hidden>
+        </span>
+      </div>
+      <textarea id="json" spellcheck="false" placeholder='{
+  "name": "Krishna Malviya",
+  "roll_number": "1221654",
+  "percentage": 81
+}'></textarea>
+      <div id="jsonstate"></div>
+    </div>
+
+    <label class="opt"><input type="checkbox" id="debug" checked> Show technical details (warnings, notes, timing, everything read)</label>
+
+    <div class="actions">
+      <button id="go" class="primary">Verify document</button>
+      <button id="reset" class="ghost" type="button">Clear</button>
+    </div>
+  </section>
+
+  <!-- ============ output ============ -->
+  <section class="card" id="out"></section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const human = k => k.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+const fmt = v => (v === null || v === undefined || v === "") ? `<span class="dim">—</span>`
+                 : typeof v === "object" ? esc(JSON.stringify(v)) : esc(v);
+const LABEL = {FULLY_MATCHED:"Fully matched", PARTIALLY_MATCHED:"Partially matched", NOT_MATCHED:"Not matched"};
+const EXAMPLE = {name: "Krishna Malviya", father_name: "Ram Kumar Malviya", roll_number: "1221654", percentage: 81};
+let previewUrl = null;
+
+async function readJson(r) {                      // never throws on a non-JSON reply (proxy page, crash ...)
+  const text = await r.text();
+  try { return JSON.parse(text); } catch { return {error: `The server returned a non-JSON response (HTTP ${r.status}).`}; }
+}
+function setOut(html, scroll) {
+  $("out").innerHTML = html;
+  if (scroll && window.innerWidth <= 900) $("out").scrollIntoView({behavior: "smooth", block: "start"});  // single-column layout
+}
+const notice = (msg, err) => `<div class="notice ${err ? "err" : ""}">${esc(msg)}</div>`;
+function emptyState() {
+  setOut(`<div class="empty"><div class="big">🔍</div><p><b>No result yet</b></p>
+    <p class="hint">Add a document and the JSON of keys to look for, then press <b>Verify document</b>.</p></div>`);
+}
+
+/* ---------- backend status ---------- */
+async function init() {
+  emptyState(); showFile(null); checkJson();
+  try {
+    const h = await readJson(await fetch("/api/health"));
+    $("status").className = "pill " + (h.status === "ok" ? "ok" : "bad");
+    $("status").textContent = h.status === "ok" ? `Connected · ${h.provider} · ${h.model}`
+                                                : `Server ${h.status || "problem"}: ${(h.problems || [h.error || ""]).join(" ")}`;
+  } catch { $("status").className = "pill bad"; $("status").textContent = "Backend not reachable"; }
+}
+
+/* ---------- document picking ---------- */
+function showFile(f) {
+  if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+  const drop = $("drop");
+  if (!f) { drop.classList.remove("has"); $("dropInner").innerHTML = `<div style="font-size:1.8rem">📄</div>Drop an image or PDF here, or click to browse`; return; }
+  drop.classList.add("has");
+  const size = f.size > 1048576 ? (f.size / 1048576).toFixed(1) + " MB" : Math.round(f.size / 1024) + " KB";
+  const visual = f.type.startsWith("image/")
+    ? `<img alt="Preview" src="${previewUrl = URL.createObjectURL(f)}" onerror="this.outerHTML='<div class=&quot;pdfbox&quot;>🖼️</div>'">`
+    : `<div class="pdfbox">📕</div>`;
+  $("dropInner").innerHTML = `${visual}<div class="name">${esc(f.name)} · ${size}<br><span style="color:var(--accent)">Click or drop to replace</span></div>`;
+}
+$("file").onchange = () => showFile($("file").files[0]);
+["dragenter", "dragover"].forEach(ev => $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.remove("over"); }));
+$("drop").addEventListener("drop", e => { if (e.dataTransfer.files.length) { $("file").files = e.dataTransfer.files; showFile($("file").files[0]); } });
+
+/* ---------- JSON input ---------- */
+function parseJson() {                             // -> {obj} or {error}
+  const text = $("json").value.trim();
+  if (!text) return {error: "Enter the keys to look for."};
+  let obj;
+  try { obj = JSON.parse(text); } catch (e) { return {error: "Not valid JSON: " + e.message}; }
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return {error: "The JSON must be an object of key/value pairs."};
+  if (!Object.keys(obj).length) return {error: "The JSON has no keys."};
+  return {obj};
+}
+function checkJson() {
+  const t = $("json").value.trim(), box = $("jsonstate"), r = parseJson();
+  $("json").classList.toggle("invalid", !!t && !!r.error);
+  if (!t) { box.className = ""; box.textContent = ""; }
+  else if (r.error) { box.className = "err"; box.textContent = r.error; }
+  else { const n = Object.keys(r.obj).length; box.className = "ok"; box.textContent = `✓ Valid JSON · ${n} key${n === 1 ? "" : "s"}`; }
+}
+$("json").addEventListener("input", checkJson);
+$("example").onclick = () => { $("json").value = JSON.stringify(EXAMPLE, null, 2); checkJson(); };
+$("jsonfile").onchange = async () => {
+  const f = $("jsonfile").files[0]; if (!f) return;
+  $("json").value = await f.text(); checkJson(); $("jsonfile").value = "";
+};
+
+/* ---------- verify ---------- */
+async function verify() {
+  const file = $("file").files[0], parsed = parseJson();
+  if (!file) return setOut(notice("Choose a document first.", true), true);
+  if (parsed.error) return setOut(notice(parsed.error, true), true);
+
+  const fd = new FormData();
+  fd.append("file", file);
+  // sent as a real .json file, exactly like an API client would
+  fd.append("json_file", new File([JSON.stringify(parsed.obj)], "data.json", {type: "application/json"}));
+  fd.append("debug", $("debug").checked);
+
+  $("go").disabled = true;
+  const t0 = Date.now();
+  const tick = () => setOut(`<div class="empty"><div class="spinner"></div><p><b>Verifying…</b> ${Math.round((Date.now() - t0) / 1000)}s</p>
+      <p class="hint">Reading the document with the model usually takes 10–20 seconds.</p></div>`);
+  tick(); if (window.innerWidth <= 900) $("out").scrollIntoView({behavior: "smooth", block: "start"});
+  const timer = setInterval(tick, 1000);
+  try {
+    const r = await fetch("/api/verify", {method: "POST", body: fd});
+    const j = await readJson(r);
+    clearInterval(timer);
+    setOut(r.ok ? renderResult(j, r.headers.get("X-Request-ID")) : renderError(r.status, j), true);
+  } catch {
+    clearInterval(timer);
+    setOut(renderError(0, {error: "Could not reach the backend. Is it still running?"}), true);
+  } finally { clearInterval(timer); $("go").disabled = false; }
+}
+
+/* ---------- rendering ---------- */
+function renderError(status, j) {
+  const tag = [j.code, status ? "HTTP " + status : ""].filter(Boolean).join(" · ");
+  return `<div class="banner ERROR"><div><div class="title">Something went wrong</div><div class="sub">${esc(j.error)}</div></div></div>
+    <div class="meta">${tag ? `<span>Code <b>${esc(tag)}</b></span>` : ""}${j.request_id ? `<span>Request ID <b>${esc(j.request_id)}</b></span>` : ""}</div>
+    ${j.details ? `<h3>Details</h3><pre>${esc(j.details)}</pre>` : ""}`;
+}
+// The API returns only {results: [{key, value, doc_value, match_score, status}]}; the summary is worked out here.
+function summarise(results) {
+  const c = {FULLY_MATCHED: 0, PARTIALLY_MATCHED: 0, NOT_MATCHED: 0};
+  results.forEach(r => { c[r.status] = (c[r.status] || 0) + 1; });
+  const total = results.length;
+  const overall = c.FULLY_MATCHED === total ? "FULLY_MATCHED" : c.NOT_MATCHED === total ? "NOT_MATCHED" : "PARTIALLY_MATCHED";
+  const score = total ? Math.round(results.reduce((a, r) => a + r.match_score, 0) / total * 10) / 10 : 0;
+  return {c, total, overall, score};
+}
+function banner(s) {
+  const sub = {
+    FULLY_MATCHED: "Every key matches the document.",
+    PARTIALLY_MATCHED: `${s.c.FULLY_MATCHED} of ${s.total} fully matched · ${s.c.PARTIALLY_MATCHED} partially · ${s.c.NOT_MATCHED} not matched.`,
+    NOT_MATCHED: "None of the keys match the document.",
+  }[s.overall];
+  return `<div class="banner ${esc(s.overall)}"><div><div class="title">${esc(LABEL[s.overall])}</div>
+    <div class="sub">${esc(sub)}</div></div><div class="score">${esc(s.score)}<small>average score / 100</small></div></div>
+    <div class="counts">
+      <div class="count f"><b>${s.c.FULLY_MATCHED}</b><span>Fully matched</span></div>
+      <div class="count p"><b>${s.c.PARTIALLY_MATCHED}</b><span>Partially matched</span></div>
+      <div class="count n"><b>${s.c.NOT_MATCHED}</b><span>Not matched</span></div></div>`;
+}
+function miniTable(rows) {
+  const SHORT = {subject_name:"Subject", subject_code:"Code", theory_marks:"Theory", internal_marks:"Internal", practical_marks:"Practical",
+                 obtained_marks:"Obtained", maximum_marks:"Max", printed_grade:"Grade", is_grade_only:"Grade only"};
+  const cols = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(c => rows.some(r => r[c] !== null && r[c] !== undefined && r[c] !== "" && r[c] !== false));
+  const cell = (c, v) => c === "is_grade_only" ? (v ? "yes" : "") : fmt(v);
+  return `<div class="tablewrap"><table class="mini"><tr>${cols.map(c => `<th>${esc(SHORT[c] || human(c))}</th>`).join("")}</tr>` +
+    rows.map(r => `<tr>${cols.map(c => `<td>${cell(c, r[c])}</td>`).join("")}</tr>`).join("") + `</table></div>`;
+}
+function extractedTable(data) {
+  const entries = Object.entries(data).filter(([, v]) => v !== null && v !== undefined);
+  if (!entries.length) return `<p class="hint">Nothing was extracted.</p>`;
+  const isTable = v => Array.isArray(v) && v.length && typeof v[0] === "object";
+  return `<table>` + entries.filter(([, v]) => !isTable(v)).map(([k, v]) =>
+      `<tr><td class="key" style="width:34%">${esc(human(k))}</td><td>${fmt(v)}</td></tr>`).join("") + `</table>` +
+    entries.filter(([, v]) => isTable(v)).map(([k, v]) => `<h3>${esc(human(k))}</h3>${miniTable(v)}`).join("");
+}
+function renderResult(j, requestId) {
+  const d = j.debug || null;                       // present only when "technical details" is ticked (debug=true)
+  const s = summarise(j.results);
+  const rows = j.results.map((r, i) => {
+    const info = d && d.results ? d.results[i] : null;
+    return `
+    <tr><td class="key">${esc(r.key)}${info && info.field && info.field !== r.key ? `<small>read as ${esc(info.field)}</small>` : ""}</td>
+        <td>${fmt(r.value)}</td>
+        <td>${fmt(r.doc_value)}</td>
+        <td>${esc(r.match_score)}<div class="bar ${esc(r.status)}"><i style="width:${Math.max(0, Math.min(100, r.match_score))}%"></i></div></td>
+        <td><span class="chip ${esc(r.status)}">${esc(LABEL[r.status] || r.status)}</span></td>
+        ${d ? `<td class="note">${esc(info ? info.note || "" : "")}</td>` : ""}</tr>`;
+  }).join("");
+  const p = (d && d.processing) || {};
+  return `${banner(s)}
+    <div class="meta">
+      ${d && d.detected_document_type ? `<span>Looks like <b>${esc(human(d.detected_document_type))}</b></span>` : ""}
+      ${d ? `<span>Pages <b>${esc(p.pages_processed)}</b></span><span>Time <b>${(p.time_ms / 1000).toFixed(1)}s</b></span><span>Model <b>${esc(p.model)}</b></span>` : ""}
+      ${requestId ? `<span>Request ID <b>${esc(requestId)}</b></span>` : ""}</div>
+    ${d ? (d.warnings || []).map(w => notice(w)).join("") : ""}
+    <h3>Results</h3>
+    <div class="tablewrap"><table>
+      <tr><th>Key</th><th>Your value</th><th>Found on document</th><th>Score</th><th>Status</th>${d ? "<th>Note</th>" : ""}</tr>${rows}</table></div>
+    ${d ? `<details><summary>Everything read from the document</summary>${extractedTable(d.extracted_data || {})}</details>` : ""}
+    ${d && (d.model_notes || []).length ? `<details><summary>Model notes (${d.model_notes.length})</summary>${d.model_notes.map(n => `<p class="hint">${esc(n)}</p>`).join("")}</details>` : ""}
+    <details><summary>Raw API response (JSON)</summary>
+      <div style="text-align:right"><button class="link" onclick="copyJson(this)">Copy</button></div>
+      <pre id="rawjson">${esc(JSON.stringify(j, null, 2))}</pre></details>`;
+}
+function copyJson(btn) {
+  navigator.clipboard.writeText($("rawjson").textContent).then(() => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1500); });
+}
+
+$("go").onclick = verify;
+$("reset").onclick = () => { $("file").value = ""; $("json").value = ""; showFile(null); checkJson(); emptyState(); };
+init();
+</script>
+</body>
+</html>

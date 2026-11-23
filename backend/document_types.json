@@ -1,0 +1,570 @@
+{
+  "marksheet": {
+    "label": "Marksheet / Educational Certificate",
+    "description": "Marksheet / grade card of any board, school or university.",
+    "postprocess": "marksheet",
+    "instructions": "- Grading may be marks, percentage or grade points (SGPA/CGPA). Extract only what is printed.\n- applicant_name: the candidate's OWN name, never father/mother/guardian.\n- roll_number: the candidate's Roll/Seat/Enrollment No. It is not a mark.\n- date_of_birth: only if labelled Date of Birth/DOB. Never a date under the photo, nor an issue/print date. Many marksheets print none: null.\n- result: the value next to 'Result' (PASS, FAIL, ATKT, 'PASS IN FIRST DIVISION' ...), not a sentence.\n- subjects: EVERY subject row in order; read each row straight across its own line (rows are close together). subject_code exactly as printed; never invent codes. theory/external/written -> theory_marks; internal/IA -> internal_marks; practical/lab/viva -> practical_marks; a single combined 'IA/PR' column -> internal_marks only. TOTAL -> obtained_marks. An empty cell is null, never 0 and never copied from another cell. A row with only a grade (e.g. Work Experience) has null marks.\n- Some boards (e.g. MP Board) print THREE column groups: MAXIMUM MARKS, MINIMUM (pass) MARKS, MARKS OBTAINED. theory_marks/internal_marks/obtained_marks come ONLY from the MARKS OBTAINED group. maximum_marks is the TOTAL of the MAXIMUM group. Ignore the MINIMUM group.\n- total_marks_obtained / total_marks_maximum: the 'Grand Total' line (maximum and obtained) if one is printed. percentage, sgpa, cgpa: only if printed. Many boards (e.g. CBSE) print no grand total: null. Never add up or calculate.\n- If several semesters/years appear, list all subjects but take totals only from the overall line.",
+    "fields": {
+      "applicant_name": {
+        "type": "name",
+        "weight": 2,
+        "aliases": [
+          "name",
+          "student_name",
+          "candidate_name"
+        ],
+        "description": "Student's full name (not a parent's)"
+      },
+      "father_name": {
+        "type": "name",
+        "aliases": [
+          "fathers_name"
+        ],
+        "description": "Father's/guardian's name, if printed"
+      },
+      "mother_name": {
+        "type": "name",
+        "aliases": [
+          "mothers_name"
+        ],
+        "description": "Mother's name, if printed"
+      },
+      "roll_number": {
+        "type": "id",
+        "aliases": [
+          "roll_no",
+          "seat_number",
+          "enrollment_number",
+          "enrolment_number"
+        ],
+        "description": "Roll / seat / enrollment number"
+      },
+      "date_of_birth": {
+        "type": "date",
+        "aliases": [
+          "dob"
+        ],
+        "description": "Date of birth, only if labelled",
+        "needs": [
+          "exam_year"
+        ]
+      },
+      "board_or_university": {
+        "type": "text",
+        "aliases": [
+          "board",
+          "university",
+          "institution"
+        ],
+        "description": "Issuing board / university / institution"
+      },
+      "exam_name": {
+        "type": "text",
+        "aliases": [
+          "examination",
+          "class"
+        ],
+        "description": "Examination title",
+        "contains": true
+      },
+      "course": {
+        "type": "text",
+        "aliases": [
+          "programme",
+          "program",
+          "branch"
+        ],
+        "description": "Course / programme / stream, if printed"
+      },
+      "semester": {
+        "type": "text",
+        "aliases": [
+          "year_of_study",
+          "term"
+        ],
+        "description": "Semester / year / term covered, if printed"
+      },
+      "exam_year": {
+        "type": "id",
+        "aliases": [
+          "year",
+          "passing_year"
+        ],
+        "description": "Year (4 digits) of the exam / result"
+      },
+      "result": {
+        "type": "text",
+        "threshold": 100,
+        "description": "Printed result (PASS / FAIL / ...)",
+        "contains": true
+      },
+      "division": {
+        "type": "text",
+        "aliases": [
+          "class_awarded",
+          "division_or_class"
+        ],
+        "description": "Division / class awarded, if printed"
+      },
+      "total_marks_obtained": {
+        "type": "number",
+        "tolerance": 0.5,
+        "aliases": [
+          "marks",
+          "total_marks",
+          "marks_obtained",
+          "score"
+        ],
+        "description": "Grand total marks obtained, if printed",
+        "needs": [
+          "subjects",
+          "total_marks_maximum",
+          "board_or_university",
+          "percentage"
+        ]
+      },
+      "total_marks_maximum": {
+        "type": "number",
+        "tolerance": 0.5,
+        "aliases": [
+          "max_marks",
+          "maximum_marks"
+        ],
+        "description": "Grand total maximum marks, if printed",
+        "needs": [
+          "subjects",
+          "total_marks_obtained",
+          "board_or_university",
+          "percentage"
+        ]
+      },
+      "percentage": {
+        "type": "percentage",
+        "weight": 2,
+        "tolerance": 0.5,
+        "decay": 10,
+        "aliases": [
+          "percent"
+        ],
+        "description": "Overall percentage, if printed",
+        "needs": [
+          "subjects",
+          "total_marks_obtained",
+          "total_marks_maximum",
+          "board_or_university"
+        ]
+      },
+      "cgpa": {
+        "type": "number",
+        "tolerance": 0.05,
+        "aliases": [
+          "gpa"
+        ],
+        "description": "CGPA / overall GPA, if printed"
+      },
+      "sgpa": {
+        "type": "number",
+        "tolerance": 0.05,
+        "aliases": [
+          "spi"
+        ],
+        "description": "SGPA / semester GPA, if printed"
+      },
+      "subjects": {
+        "type": "table",
+        "description": "array of {\"subject_name\",\"subject_code\",\"theory_marks\",\"internal_marks\",\"practical_marks\",\"obtained_marks\",\"maximum_marks\",\"printed_grade\"}"
+      }
+    }
+  },
+  "scorecard": {
+    "label": "Scorecard (entrance / competitive exam)",
+    "description": "Entrance / competitive exam scorecard (GATE, JEE, NEET, CAT, CUET, state CETs, ...).",
+    "postprocess": "scorecard",
+    "instructions": "- applicant_name: the candidate's own name; father_name: the parent/guardian.\n- score: the headline score as printed (e.g. 'GATE Score'). marks_obtained: raw marks (e.g. 'Marks out of 100') only if printed separately from the score; max_marks: their maximum (100). max_score only if a maximum for the score itself is printed.\n- percentile 0-100. rank: overall/All-India rank; category_rank: rank within the category. Integers, no commas.\n- percentage: only if printed; never calculate it; never a percentile or marks.\n- registration_number, application_number, roll_number: three separate ids, each only from a field with that exact label. A number with no matching label on the card is null.\n- category and qualifying_status only if stated for THIS candidate, not inferred from a generic cut-off table or notes.\n- section_scores: null unless the card has a table of per-section scores; a single paper's marks are not section scores.",
+    "fields": {
+      "applicant_name": {
+        "type": "name",
+        "weight": 2,
+        "aliases": [
+          "name",
+          "student_name",
+          "candidate_name"
+        ],
+        "description": "Candidate's full name"
+      },
+      "father_name": {
+        "type": "name",
+        "aliases": [
+          "fathers_name",
+          "parent_name",
+          "guardian_name",
+          "parent_guardian_name"
+        ],
+        "description": "Father's / parent / guardian name"
+      },
+      "date_of_birth": {
+        "type": "date",
+        "aliases": [
+          "dob"
+        ],
+        "description": "Date of birth, only if explicitly labelled",
+        "needs": [
+          "exam_year"
+        ]
+      },
+      "exam_name": {
+        "type": "text",
+        "aliases": [
+          "examination",
+          "test_name"
+        ],
+        "description": "Exam name, e.g. 'GATE 2026'",
+        "contains": true
+      },
+      "exam_year": {
+        "type": "id",
+        "aliases": [
+          "year"
+        ],
+        "description": "Year (4 digits) of the exam / scorecard"
+      },
+      "conducting_body": {
+        "type": "text",
+        "aliases": [
+          "conducted_by",
+          "authority"
+        ],
+        "description": "Organisation/institute that conducted the exam",
+        "contains": true
+      },
+      "test_paper": {
+        "type": "text",
+        "aliases": [
+          "paper",
+          "paper_name",
+          "discipline",
+          "test_paper_name"
+        ],
+        "description": "Test paper / discipline, e.g. 'Civil Engineering (CE)'",
+        "contains": true
+      },
+      "section": {
+        "type": "text",
+        "aliases": [
+          "sections",
+          "section_opted"
+        ],
+        "description": "Section(s) chosen, if printed"
+      },
+      "exam_date": {
+        "type": "date",
+        "aliases": [
+          "date_of_examination",
+          "exam_date_of"
+        ],
+        "description": "Date of examination"
+      },
+      "registration_number": {
+        "type": "id",
+        "aliases": [
+          "registration_no",
+          "reg_no",
+          "enrollment_number"
+        ],
+        "description": "Registration number, only if labelled 'Registration'"
+      },
+      "application_number": {
+        "type": "id",
+        "aliases": [
+          "application_no"
+        ],
+        "description": "Application number, only if labelled 'Application'"
+      },
+      "roll_number": {
+        "type": "id",
+        "aliases": [
+          "roll_no",
+          "hall_ticket_number"
+        ],
+        "description": "Roll / hall-ticket number"
+      },
+      "score": {
+        "type": "number",
+        "weight": 2,
+        "tolerance": 0.5,
+        "aliases": [
+          "gate_score",
+          "total_score",
+          "total_marks",
+          "normalised_score"
+        ],
+        "description": "Headline score (e.g. GATE Score)"
+      },
+      "max_score": {
+        "type": "number",
+        "tolerance": 0.5,
+        "aliases": [
+          "maximum_score"
+        ],
+        "description": "Maximum possible score, only if printed"
+      },
+      "marks_obtained": {
+        "type": "number",
+        "tolerance": 0.01,
+        "decay": 5,
+        "aliases": [
+          "marks",
+          "marks_out_of_100",
+          "raw_marks"
+        ],
+        "description": "Raw marks, if printed separately (e.g. 'Marks out of 100')",
+        "needs": [
+          "max_marks",
+          "score",
+          "max_score"
+        ]
+      },
+      "max_marks": {
+        "type": "number",
+        "tolerance": 0,
+        "aliases": [
+          "maximum_marks",
+          "marks_out_of"
+        ],
+        "description": "Maximum of the raw marks (e.g. 100)",
+        "needs": [
+          "marks_obtained",
+          "score",
+          "max_score"
+        ]
+      },
+      "percentile": {
+        "type": "number",
+        "tolerance": 0.01,
+        "decay": 5,
+        "aliases": [
+          "nta_score"
+        ],
+        "description": "Percentile, if printed"
+      },
+      "percentage": {
+        "type": "percentage",
+        "tolerance": 0.5,
+        "decay": 10,
+        "aliases": [
+          "percent"
+        ],
+        "description": "Percentage, only if printed",
+        "needs": [
+          "marks_obtained",
+          "max_marks",
+          "score",
+          "max_score"
+        ]
+      },
+      "rank": {
+        "type": "number",
+        "tolerance": 0,
+        "decay": 1000,
+        "aliases": [
+          "all_india_rank",
+          "air",
+          "overall_rank"
+        ],
+        "description": "Overall / All-India rank"
+      },
+      "category_rank": {
+        "type": "number",
+        "tolerance": 0,
+        "decay": 1000,
+        "description": "Rank within the category"
+      },
+      "candidates_appeared": {
+        "type": "number",
+        "tolerance": 0,
+        "decay": 1000,
+        "aliases": [
+          "number_of_candidates",
+          "candidates_appeared_for_paper",
+          "appeared_candidates"
+        ],
+        "description": "Number of candidates who appeared for the paper"
+      },
+      "category": {
+        "type": "text",
+        "description": "Category (General / OBC / SC / ST / EWS)",
+        "needs": [
+          "qualifying_marks_general",
+          "qualifying_marks_ews_obc",
+          "qualifying_marks_sc_st_pwd"
+        ]
+      },
+      "qualifying_marks_general": {
+        "type": "number",
+        "tolerance": 0.01,
+        "decay": 5,
+        "aliases": [
+          "qualifying_marks",
+          "cutoff_general"
+        ],
+        "description": "Qualifying marks: General"
+      },
+      "qualifying_marks_ews_obc": {
+        "type": "number",
+        "tolerance": 0.01,
+        "decay": 5,
+        "aliases": [
+          "qualifying_marks_obc",
+          "cutoff_ews_obc"
+        ],
+        "description": "Qualifying marks: EWS/OBC-NCL"
+      },
+      "qualifying_marks_sc_st_pwd": {
+        "type": "number",
+        "tolerance": 0.01,
+        "decay": 5,
+        "aliases": [
+          "qualifying_marks_sc_st",
+          "cutoff_sc_st_pwd"
+        ],
+        "description": "Qualifying marks: SC/ST/PwD"
+      },
+      "qualifying_status": {
+        "type": "text",
+        "aliases": [
+          "result",
+          "status"
+        ],
+        "threshold": 100,
+        "description": "Qualified / Not Qualified, if printed",
+        "contains": true,
+        "needs": [
+          "qualifying_marks_general",
+          "qualifying_marks_ews_obc",
+          "qualifying_marks_sc_st_pwd"
+        ]
+      },
+      "valid_until": {
+        "type": "date",
+        "aliases": [
+          "validity"
+        ],
+        "description": "Validity date, if printed"
+      },
+      "section_scores": {
+        "type": "table",
+        "description": "array of {\"section\",\"score\",\"max_score\",\"percentile\"}"
+      }
+    }
+  },
+  "caste_certificate": {
+    "label": "Caste Certificate",
+    "description": "Government-issued caste / category certificate.",
+    "instructions": "- applicant_name is the person the certificate is issued TO, not the father/guardian.\n- certificate_number is the certificate / serial / reference number.",
+    "fields": {
+      "applicant_name": {
+        "type": "name",
+        "weight": 2,
+        "aliases": [
+          "name"
+        ],
+        "description": "Name of the person the certificate is issued to"
+      },
+      "father_name": {
+        "type": "name",
+        "description": "Father's / guardian's name"
+      },
+      "caste": {
+        "type": "text",
+        "description": "Caste / community stated on the certificate"
+      },
+      "category": {
+        "type": "text",
+        "aliases": [
+          "caste_category"
+        ],
+        "description": "Category (SC / ST / OBC / General ...)"
+      },
+      "certificate_number": {
+        "type": "id",
+        "aliases": [
+          "certificate_no"
+        ],
+        "description": "Certificate number"
+      },
+      "issue_date": {
+        "type": "date",
+        "aliases": [
+          "date_of_issue"
+        ],
+        "description": "Date of issue"
+      },
+      "issuing_authority": {
+        "type": "text",
+        "description": "Authority that issued the certificate"
+      }
+    }
+  },
+  "income_certificate": {
+    "label": "Income Certificate",
+    "description": "Government-issued income certificate.",
+    "instructions": "- annual_income is a plain number in rupees (no currency symbol or commas).",
+    "fields": {
+      "applicant_name": {
+        "type": "name",
+        "weight": 2,
+        "aliases": [
+          "name"
+        ],
+        "description": "Name of the person the certificate is issued to"
+      },
+      "father_name": {
+        "type": "name",
+        "description": "Father's / guardian's name"
+      },
+      "annual_income": {
+        "type": "number",
+        "weight": 2,
+        "tolerance": 0,
+        "decay": 50000,
+        "aliases": [
+          "income"
+        ],
+        "description": "Annual income stated on the certificate, in rupees"
+      },
+      "certificate_number": {
+        "type": "id",
+        "aliases": [
+          "certificate_no"
+        ],
+        "description": "Certificate number"
+      },
+      "issue_date": {
+        "type": "date",
+        "aliases": [
+          "date_of_issue"
+        ],
+        "description": "Date of issue"
+      },
+      "financial_year": {
+        "type": "text",
+        "description": "Financial year the income relates to"
+      }
+    }
+  },
+  "generic": {
+    "label": "Generic document",
+    "description": "Any other document. Send whatever metadata keys you need; they are extracted and matched as text, numbers or dates according to the value you send.",
+    "allow_dynamic_fields": true,
+    "fields": {
+      "applicant_name": {
+        "type": "name",
+        "weight": 2,
+        "aliases": [
+          "name"
+        ],
+        "description": "Name of the person the document is issued to"
+      }
+    }
+  }
+}
