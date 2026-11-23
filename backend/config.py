@@ -47,7 +47,7 @@ class Settings:
     IMAGE_MAX_SIDE = _int("IMAGE_MAX_SIDE", 2000, 256)
 
     # --- server ------------------------------------------------------------
-    HOST = os.getenv("HOST", "10.120.14.218")
+    HOST = os.getenv("HOST", "127.0.0.1")
     PORT = _int("PORT", 5000, 1)
     DEBUG = _bool("DEBUG", True)
 
