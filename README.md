@@ -163,10 +163,3 @@ post-processing fails the raw extracted values are still used, with a warning in
 4000 characters), `MAX_UPLOAD_MB`, `MAX_PDF_PAGES`, `IMAGE_MAX_SIDE`, `PARTIAL_MATCH_MIN_SCORE`, `HOST`, `PORT`, `DEBUG`.
 A bad value stops startup with a one-line message.
 
-## Notes
-- There is no authentication on the service; put it behind your network / gateway controls before exposing it widely.
-- The model sees the page image directly (no local OCR). Documents are resized to `IMAGE_MAX_SIDE`; PDFs are limited
-  to `MAX_PDF_PAGES`.
-- A key that is not printed on the document is `NOT_MATCHED` with `doc_value: null`. Identifiers are compared under the
-  label the document uses: a GATE card prints a *Registration* number, so `application_number` is not found even if you
-  give the same value.
